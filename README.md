@@ -8,6 +8,8 @@
 
 **[🚀 مشاهده نسخه آنلاین](https://nabikaz.github.io/Web-Speech-API/Web_Speech_API.htm)**
 
+![Web Speech API Demo Screenshot](https://github.com/user-attachments/assets/68f5e71a-2a08-4616-bbd5-a9a98c07dff0)
+
 ## ویژگی‌ها
 
 ### 🎯 تشخیص گفتار (Speech Recognition)
@@ -69,3 +71,5 @@
 ## توسعه‌دهنده
 
 توسعه داده شده توسط [NabiKAZ](https://x.com/NabiKAZ)
+
+ساخته شده با ❤️ به کمک Claude 4
