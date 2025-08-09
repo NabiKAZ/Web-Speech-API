@@ -118,6 +118,68 @@
     <div class="container">
         <h1>🎤 Web Speech API Demo</h1>
         
+        <!-- Windows Virtual Audio Setup Guide -->
+        <div class="section" style="background: #f8f9fa; border: 2px solid #dee2e6;">
+            <h2>🖥️ راهنمای تنظیمات Windows</h2>
+            
+            <div style="margin-bottom: 20px; padding: 15px; background: #e7f3ff; border-radius: 8px; border-left: 4px solid #0066cc;">
+                <h3 style="margin-top: 0; color: #0066cc;">🔧 روش 1: فعال‌سازی Stereo Mix (رایگان)</h3>
+                <div style="font-family: 'Courier New', monospace; background: #1e1e1e; color: #ffffff; padding: 15px; border-radius: 8px; margin: 10px 0; font-size: 14px;">
+                    <div style="color: #98c379;"># باز کردن Sound Settings</div>
+                    Win + R → mmsys.cpl → Enter<br><br>
+                    
+                    <div style="color: #98c379;"># فعال‌سازی Stereo Mix</div>
+                    1. تب "Recording" → Right Click → "Show Disabled Devices"<br>
+                    2. "Stereo Mix" → Right Click → "Enable"<br>
+                    3. "Stereo Mix" → Right Click → "Set as Default Device"<br><br>
+                    
+                    <div style="color: #98c379;"># تنظیم Volume</div>
+                    4. "Stereo Mix" → Double Click → Levels → 70-80%<br>
+                    5. Advanced → 16 bit, 44100 Hz → OK
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <h3 style="margin-top: 0; color: #856404;">🛠️ روش 2: VB-Audio Virtual Cable (پیشنهادی)</h3>
+                <div style="font-family: 'Courier New', monospace; background: #1e1e1e; color: #ffffff; padding: 15px; border-radius: 8px; margin: 10px 0; font-size: 14px;">
+                    <div style="color: #98c379;"># دانلود و نصب</div>
+                    1. Download: https://vb-audio.com/Cable/<br>
+                    2. Extract → Run as Administrator → Install<br>
+                    3. Restart Windows<br><br>
+                    
+                    <div style="color: #98c379;"># تنظیمات</div>
+                    4. Sound Settings → Output → "CABLE Input"<br>
+                    5. Sound Settings → Input → "CABLE Output"<br>
+                    6. Volume: 80-90%
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px; padding: 15px; background: #d1ecf1; border-radius: 8px; border-left: 4px solid #17a2b8;">
+                <h3 style="margin-top: 0; color: #0c5460;">🎵 روش 3: VoiceMeeter (حرفه‌ای)</h3>
+                <div style="font-family: 'Courier New', monospace; background: #1e1e1e; color: #ffffff; padding: 15px; border-radius: 8px; margin: 10px 0; font-size: 14px;">
+                    <div style="color: #98c379;"># نصب VoiceMeeter</div>
+                    1. Download: https://vb-audio.com/Voicemeeter/<br>
+                    2. Install → Restart<br><br>
+                    
+                    <div style="color: #98c379;"># تنظیمات</div>
+                    3. Windows Sound → Output → "VoiceMeeter Input"<br>
+                    4. Windows Sound → Input → "VoiceMeeter Output"<br>
+                    5. VoiceMeeter → A1: Default speakers<br>
+                    6. B1: Enable for routing
+                </div>
+            </div>
+
+            <div style="padding: 15px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+                <h3 style="margin-top: 0; color: #155724;">✅ تست تنظیمات</h3>
+                <div style="font-size: 14px; line-height: 1.6;">
+                    <strong>1. تست میکروفن:</strong> بالا روی "تست میکروفن" کلیک کنید<br>
+                    <strong>2. چک Volume Meter:</strong> باید صدا را تشخیص دهد<br>
+                    <strong>3. تست با موسیقی:</strong> یک آهنگ پخش کنید و نتیجه را ببینید<br>
+                    <strong>4. Browser Permission:</strong> اجازه دسترسی به میکروفن را بدهید
+                </div>
+            </div>
+        </div>
+
         <!-- Speech Recognition Section -->
         <div class="section">
             <h2>🎯 تشخیص گفتار (Speech Recognition)</h2>
@@ -129,14 +191,77 @@
                     <option value="en-US">English</option>
                     <option value="ar-SA">العربية</option>
                 </select>
+                <button id="testMicBtn">تست میکروفن</button>
             </div>
             <div id="status"></div>
+            
+            <!-- Volume meter -->
+            <div style="margin: 15px 0;">
+                <label>سطح صدای دریافتی:</label>
+                <div id="volumeMeter" style="width: 100%; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; margin-top: 5px;">
+                    <div id="volumeBar" style="height: 100%; background: linear-gradient(90deg, #4caf50, #ffeb3b, #f44336); width: 0%; transition: width 0.1s;"></div>
+                </div>
+                <small id="volumeText">صدا تشخیص داده نشد</small>
+            </div>
+            
             <textarea id="transcript" placeholder="متن تشخیص داده شده اینجا نمایش داده می‌شود..."></textarea>
+        </div>
+
+        <!-- Web Audio API Processing Section -->
+        <div class="section">
+            <h2>🎧 پردازش فایل صوتی با Web Audio API</h2>
+            <div style="margin-bottom: 15px; padding: 12px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+                <strong>✅ روش پیشنهادی:</strong><br>
+                • این روش بهترین نتیجه را می‌دهد<br>
+                • بدون نیاز به بارگذاری اضافی<br>
+                • با همه فرمت‌های رایج کار می‌کند<br>
+                • سریع و قابل اعتماد است
+            </div>
+            
+            <div class="controls">
+                <input type="file" id="webAudioFile" accept="audio/*" style="margin-bottom: 10px;">
+                <button id="processWebAudioBtn" disabled>پردازش فایل صوتی</button>
+                <button id="stopWebAudioBtn" disabled>توقف</button>
+            </div>
+            
+            <div id="webAudioStatus"></div>
+            <div id="webAudioProgress" style="display: none; margin: 10px 0;">
+                <div style="background: #f0f0f0; border-radius: 10px; overflow: hidden; height: 20px;">
+                    <div id="webAudioProgressBar" style="height: 100%; background: linear-gradient(90deg, #ff9800, #f44336); width: 0%; transition: width 0.3s;"></div>
+                </div>
+                <small id="webAudioProgressText">0%</small>
+            </div>
+            
+            <audio id="webAudioPlayer" controls style="width: 100%; margin: 10px 0; display: none;"></audio>
+            <textarea id="webAudioTranscript" placeholder="متن تشخیص داده شده با Web Audio API اینجا نمایش داده می‌شود..."></textarea>
         </div>
 
         <!-- Audio File Processing Section -->
         <div class="section">
-            <h2>🎵 تبدیل فایل صوتی به متن</h2>
+            <h2>🎵 تبدیل فایل صوتی به متن (روش کلاسیک)</h2>
+            
+            <!-- Settings Guide -->
+            <div style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3;">
+                <h3 style="margin-top: 0; color: #1976d2;">⚙️ راهنمای تنظیمات سیستم:</h3>
+                <div style="font-size: 14px; line-height: 1.6;">
+                    <strong>Windows:</strong><br>
+                    • کنترل پنل → Sound → Recording → Stereo Mix را فعال کنید<br>
+                    • یا: Settings → System → Sound → Sound Control Panel → Recording<br><br>
+                    
+                    <strong>Chrome:</strong><br>
+                    • آدرس‌بار: chrome://settings/content/microphone<br>
+                    • اجازه دسترسی به میکروفن برای این سایت<br><br>
+                    
+                    <strong>Firefox:</strong><br>
+                    • آیکون قفل کنار آدرس → Permissions → Microphone<br><br>
+                    
+                    <strong>نکات مهم:</strong><br>
+                    • صدای سیستم: 70-80٪<br>
+                    • میکروفن حساسیت: متوسط<br>
+                    • محیط ساکت نگه دارید
+                </div>
+            </div>
+            
             <div class="controls">
                 <input type="file" id="audioFile" accept="audio/*" style="margin-bottom: 10px;">
                 <button id="processAudioBtn" disabled>پردازش فایل صوتی</button>
@@ -173,6 +298,10 @@
         const transcript = document.getElementById('transcript');
         const status = document.getElementById('status');
         const langSelect = document.getElementById('langSelect');
+        const testMicBtn = document.getElementById('testMicBtn');
+        const volumeMeter = document.getElementById('volumeMeter');
+        const volumeBar = document.getElementById('volumeBar');
+        const volumeText = document.getElementById('volumeText');
 
         // Audio File Processing
         const audioFile = document.getElementById('audioFile');
@@ -181,6 +310,22 @@
         const audioPlayer = document.getElementById('audioPlayer');
         const audioTranscript = document.getElementById('audioTranscript');
         const audioStatus = document.getElementById('audioStatus');
+
+        // Web Audio API variables
+        const webAudioFile = document.getElementById('webAudioFile');
+        const processWebAudioBtn = document.getElementById('processWebAudioBtn');
+        const stopWebAudioBtn = document.getElementById('stopWebAudioBtn');
+        const webAudioStatus = document.getElementById('webAudioStatus');
+        const webAudioProgress = document.getElementById('webAudioProgress');
+        const webAudioProgressBar = document.getElementById('webAudioProgressBar');
+        const webAudioProgressText = document.getElementById('webAudioProgressText');
+        const webAudioPlayer = document.getElementById('webAudioPlayer');
+        const webAudioTranscript = document.getElementById('webAudioTranscript');
+
+        let audioContext;
+        let analyser;
+        let microphone;
+        let animationId;
 
         // Check browser support
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -244,6 +389,60 @@
             startBtn.classList.remove('recording');
         }
 
+        // Test microphone function
+        testMicBtn.onclick = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                
+                analyser.fftSize = 256;
+                microphone.connect(analyser);
+                
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                function updateVolume() {
+                    analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        sum += dataArray[i];
+                    }
+                    const average = sum / bufferLength;
+                    const percentage = (average / 255) * 100;
+                    
+                    volumeBar.style.width = percentage + '%';
+                    volumeText.textContent = `سطح صدا: ${Math.round(percentage)}%`;
+                    
+                    if (percentage > 5) {
+                        status.innerHTML = '<div class="status listening">✅ میکروفن کار می‌کند!</div>';
+                    }
+                    
+                    animationId = requestAnimationFrame(updateVolume);
+                }
+                
+                updateVolume();
+                status.innerHTML = '<div class="status listening">🎤 تست میکروفن... صحبت کنید</div>';
+                
+                // Stop test after 10 seconds
+                setTimeout(() => {
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                    }
+                    if (audioContext) {
+                        audioContext.close();
+                    }
+                    stream.getTracks().forEach(track => track.stop());
+                    volumeBar.style.width = '0%';
+                    volumeText.textContent = 'تست تمام شد';
+                }, 10000);
+                
+            } catch (error) {
+                status.innerHTML = '<div class="status error">❌ خطا در دسترسی به میکروفن: ' + error.message + '</div>';
+            }
+        };
+
         // Audio File Processing Functions
         audioFile.onchange = (event) => {
             const file = event.target.files[0];
@@ -260,6 +459,10 @@
             if (!audioFile.files[0]) return;
             
             try {
+                // Check microphone first
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop()); // Stop the test stream
+                
                 // Setup audio recognition
                 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -268,14 +471,23 @@
                     audioRecognition.continuous = true;
                     audioRecognition.interimResults = true;
                     audioRecognition.lang = langSelect.value;
+                    audioRecognition.maxAlternatives = 1;
                     
                     let finalTranscript = '';
                     
                     audioRecognition.onstart = () => {
                         processAudioBtn.disabled = true;
                         stopProcessBtn.disabled = false;
-                        audioStatus.innerHTML = '<div class="status listening">🎤 در حال پردازش فایل صوتی...</div>';
+                        audioStatus.innerHTML = '<div class="status listening">🎤 آماده‌سازی پردازش...</div>';
                         audioTranscript.value = '';
+                        
+                        // Start playing audio after recognition starts
+                        setTimeout(() => {
+                            audioPlayer.currentTime = 0;
+                            audioPlayer.volume = 0.8; // Set volume to 80%
+                            audioPlayer.play();
+                            audioStatus.innerHTML = '<div class="status listening">🎵 در حال پخش و پردازش فایل...</div>';
+                        }, 1500);
                     };
                     
                     audioRecognition.onresult = (event) => {
@@ -291,27 +503,48 @@
                         }
                         
                         audioTranscript.value = finalTranscript + interimTranscript;
+                        
+                        // Show progress
+                        const currentTime = audioPlayer.currentTime;
+                        const duration = audioPlayer.duration;
+                        const progress = duration ? Math.round((currentTime / duration) * 100) : 0;
+                        audioStatus.innerHTML = `<div class="status listening">🎵 پردازش: ${progress}% (${Math.round(currentTime)}s / ${Math.round(duration)}s)</div>`;
                     };
                     
                     audioRecognition.onerror = (event) => {
-                        audioStatus.innerHTML = `<div class="status error">❌ خطا در پردازش: ${event.error}</div>`;
+                        let errorMsg = 'خطای نامشخص';
+                        switch(event.error) {
+                            case 'no-speech':
+                                errorMsg = 'صدایی تشخیص داده نشد - صدای سیستم را بالا ببرید';
+                                break;
+                            case 'audio-capture':
+                                errorMsg = 'مشکل در دسترسی به میکروفن';
+                                break;
+                            case 'not-allowed':
+                                errorMsg = 'دسترسی به میکروفن مجاز نیست';
+                                break;
+                            case 'network':
+                                errorMsg = 'مشکل اتصال شبکه';
+                                break;
+                            default:
+                                errorMsg = event.error;
+                        }
+                        audioStatus.innerHTML = `<div class="status error">❌ ${errorMsg}</div>`;
                         resetAudioButtons();
                     };
                     
                     audioRecognition.onend = () => {
-                        audioStatus.innerHTML = '<div class="status">✅ پردازش فایل صوتی تمام شد</div>';
+                        if (finalTranscript.trim()) {
+                            audioStatus.innerHTML = '<div class="status">✅ پردازش با موفقیت تمام شد</div>';
+                        } else {
+                            audioStatus.innerHTML = '<div class="status error">⚠️ متنی تشخیص داده نشد - تنظیمات صدا را بررسی کنید</div>';
+                        }
                         resetAudioButtons();
                         audioPlayer.pause();
                     };
                     
-                    // Start recognition and play audio
+                    // Start recognition
                     audioRecognition.start();
-                    
-                    // Play audio after a short delay
-                    setTimeout(() => {
-                        audioPlayer.currentTime = 0;
-                        audioPlayer.play();
-                    }, 1000);
                     
                     // Stop recognition when audio ends
                     audioPlayer.onended = () => {
@@ -319,11 +552,15 @@
                             if (audioRecognition) {
                                 audioRecognition.stop();
                             }
-                        }, 2000); // Wait 2 seconds after audio ends
+                        }, 3000); // Wait 3 seconds after audio ends
                     };
+                    
+                } else {
+                    audioStatus.innerHTML = '<div class="status error">❌ مرورگر از Speech Recognition پشتیبانی نمی‌کند</div>';
                 }
+                
             } catch (error) {
-                audioStatus.innerHTML = `<div class="status error">❌ خطا: ${error.message}</div>`;
+                audioStatus.innerHTML = `<div class="status error">❌ خطا در دسترسی به میکروفن: ${error.message}</div>`;
                 resetAudioButtons();
             }
         };
@@ -339,6 +576,197 @@
         function resetAudioButtons() {
             processAudioBtn.disabled = false;
             stopProcessBtn.disabled = true;
+        }
+
+        // Web Audio API Functions
+        webAudioFile.onchange = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                webAudioStatus.innerHTML = '<div class="status">📁 فایل آماده پردازش با Web Audio API</div>';
+                processWebAudioBtn.disabled = false;
+            }
+        };
+
+        processWebAudioBtn.onclick = async () => {
+            const file = webAudioFile.files[0];
+            if (!file) return;
+            
+            try {
+                processWebAudioBtn.disabled = true;
+                stopWebAudioBtn.disabled = false;
+                webAudioProgress.style.display = 'block';
+                webAudioStatus.innerHTML = '<div class="status listening">🎧 در حال پردازش با Web Audio API...</div>';
+                
+                // Create audio context
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Read file as ArrayBuffer
+                const arrayBuffer = await file.arrayBuffer();
+                webAudioProgressBar.style.width = '25%';
+                webAudioProgressText.textContent = 'خواندن فایل: 25%';
+                
+                // Decode audio data
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                webAudioProgressBar.style.width = '50%';
+                webAudioProgressText.textContent = 'پردازش صوت: 50%';
+                
+                // Convert to WAV blob
+                const wavBlob = await audioBufferToWav(audioBuffer);
+                const audioUrl = URL.createObjectURL(wavBlob);
+                
+                webAudioProgressBar.style.width = '75%';
+                webAudioProgressText.textContent = 'تبدیل فرمت: 75%';
+                
+                // Setup audio player
+                webAudioPlayer.src = audioUrl;
+                webAudioPlayer.style.display = 'block';
+                
+                webAudioProgressBar.style.width = '100%';
+                webAudioProgressText.textContent = 'آماده تشخیص: 100%';
+                
+                // Process with speech recognition
+                await processWithWebAudio(audioUrl);
+                
+                webAudioProgress.style.display = 'none';
+                
+            } catch (error) {
+                webAudioStatus.innerHTML = `<div class="status error">❌ خطا در پردازش: ${error.message}</div>`;
+                webAudioProgress.style.display = 'none';
+                resetWebAudioButtons();
+            }
+        };
+
+        async function audioBufferToWav(buffer) {
+            const length = buffer.length;
+            const sampleRate = buffer.sampleRate;
+            const numberOfChannels = buffer.numberOfChannels;
+            
+            // Convert to mono
+            const monoBuffer = new Float32Array(length);
+            if (numberOfChannels === 1) {
+                monoBuffer.set(buffer.getChannelData(0));
+            } else {
+                const leftChannel = buffer.getChannelData(0);
+                const rightChannel = buffer.getChannelData(1);
+                for (let i = 0; i < length; i++) {
+                    monoBuffer[i] = (leftChannel[i] + rightChannel[i]) / 2;
+                }
+            }
+            
+            // Create WAV file
+            const wavBuffer = new ArrayBuffer(44 + length * 2);
+            const view = new DataView(wavBuffer);
+            
+            // WAV header
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + length * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, length * 2, true);
+            
+            // Convert float samples to 16-bit PCM
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                const sample = Math.max(-1, Math.min(1, monoBuffer[i]));
+                view.setInt16(offset, sample * 0x7FFF, true);
+                offset += 2;
+            }
+            
+            return new Blob([wavBuffer], { type: 'audio/wav' });
+        }
+
+        async function processWithWebAudio(audioUrl) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    const recognition = new SpeechRecognition();
+                    
+                    recognition.continuous = true;
+                    recognition.interimResults = true;
+                    recognition.lang = langSelect.value;
+                    recognition.maxAlternatives = 3;
+                    
+                    let finalTranscript = '';
+                    const audio = new Audio(audioUrl);
+                    
+                    recognition.onstart = () => {
+                        webAudioStatus.innerHTML = '<div class="status listening">🎤 شروع تشخیص گفتار...</div>';
+                        setTimeout(() => {
+                            audio.volume = 1.0;
+                            audio.play();
+                        }, 1000);
+                    };
+                    
+                    recognition.onresult = (event) => {
+                        let interimTranscript = '';
+                        
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const result = event.results[i];
+                            const transcriptPart = result[0].transcript;
+                            
+                            if (result.isFinal) {
+                                finalTranscript += transcriptPart + ' ';
+                            } else {
+                                interimTranscript += transcriptPart;
+                            }
+                        }
+                        
+                        webAudioTranscript.value = finalTranscript + interimTranscript;
+                        
+                        // Show progress
+                        const progress = audio.duration ? Math.round((audio.currentTime / audio.duration) * 100) : 0;
+                        webAudioStatus.innerHTML = `<div class="status listening">🎵 پردازش: ${progress}% - ${Math.round(audio.currentTime)}s</div>`;
+                    };
+                    
+                    recognition.onerror = (event) => {
+                        webAudioStatus.innerHTML = `<div class="status error">❌ خطا: ${event.error}</div>`;
+                        reject(event.error);
+                    };
+                    
+                    recognition.onend = () => {
+                        if (finalTranscript.trim()) {
+                            webAudioStatus.innerHTML = '<div class="status">🎉 پردازش با Web Audio API کامل شد!</div>';
+                        } else {
+                            webAudioStatus.innerHTML = '<div class="status error">⚠️ متنی تشخیص نشد</div>';
+                        }
+                        resetWebAudioButtons();
+                        resolve();
+                    };
+                    
+                    audio.onended = () => {
+                        setTimeout(() => recognition.stop(), 3000);
+                    };
+                    
+                    recognition.start();
+                    
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        stopWebAudioBtn.onclick = () => {
+            webAudioStatus.innerHTML = '<div class="status">⏹️ پردازش متوقف شد</div>';
+            resetWebAudioButtons();
+        };
+
+        function resetWebAudioButtons() {
+            processWebAudioBtn.disabled = false;
+            stopWebAudioBtn.disabled = true;
         }
 
         // Speech Synthesis
