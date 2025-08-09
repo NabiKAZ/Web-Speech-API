@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Speech API Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .listening {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        select {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .recording {
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Web Speech API Demo</h1>
+        
+        <!-- Speech Recognition Section -->
+        <div class="section">
+            <h2>🎯 تشخیص گفتار (Speech Recognition)</h2>
+            <div class="controls">
+                <button id="startBtn">شروع ضبط</button>
+                <button id="stopBtn" disabled>توقف ضبط</button>
+                <select id="langSelect">
+                    <option value="fa-IR">فارسی</option>
+                    <option value="en-US">English</option>
+                    <option value="ar-SA">العربية</option>
+                </select>
+            </div>
+            <div id="status"></div>
+            <textarea id="transcript" placeholder="متن تشخیص داده شده اینجا نمایش داده می‌شود..."></textarea>
+        </div>
+
+        <!-- Audio File Processing Section -->
+        <div class="section">
+            <h2>🎵 تبدیل فایل صوتی به متن</h2>
+            <div class="controls">
+                <input type="file" id="audioFile" accept="audio/*" style="margin-bottom: 10px;">
+                <button id="processAudioBtn" disabled>پردازش فایل صوتی</button>
+                <button id="stopProcessBtn" disabled>توقف پردازش</button>
+            </div>
+            <div id="audioStatus"></div>
+            <audio id="audioPlayer" controls style="width: 100%; margin: 10px 0; display: none;"></audio>
+            <textarea id="audioTranscript" placeholder="متن تشخیص داده شده از فایل صوتی اینجا نمایش داده می‌شود..."></textarea>
+            <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; font-size: 14px;">
+                ⚠️ <strong>نکته:</strong> این روش از طریق پخش فایل و ضبط مجدد کار می‌کند. برای بهترین نتیجه صدای سیستم را بالا ببرید و سروصدای محیط را کم کنید.
+            </div>
+        </div>
+        
+        <!-- Speech Synthesis Section -->
+        <div class="section">
+            <h2>🔊 تولید گفتار (Speech Synthesis)</h2>
+            <textarea id="textToSpeak" placeholder="متنی که می‌خواهید بخوانید را اینجا بنویسید...">سلام! این یک تست برای Web Speech API است.</textarea>
+            <div class="controls">
+                <button id="speakBtn">خواندن متن</button>
+                <button id="pauseBtn">توقف</button>
+                <select id="voiceSelect"></select>
+                <label>سرعت: <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="1"></label>
+                <label>بلندی: <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1"></label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Speech Recognition
+        let recognition;
+        let audioRecognition;
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const transcript = document.getElementById('transcript');
+        const status = document.getElementById('status');
+        const langSelect = document.getElementById('langSelect');
+
+        // Audio File Processing
+        const audioFile = document.getElementById('audioFile');
+        const processAudioBtn = document.getElementById('processAudioBtn');
+        const stopProcessBtn = document.getElementById('stopProcessBtn');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audioTranscript = document.getElementById('audioTranscript');
+        const audioStatus = document.getElementById('audioStatus');
+
+        // Check browser support
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'fa-IR';
+            
+            recognition.onstart = () => {
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                startBtn.classList.add('recording');
+                status.innerHTML = '<div class="status listening">🎤 در حال گوش دادن...</div>';
+            };
+            
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcriptPart = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcriptPart;
+                    } else {
+                        interimTranscript += transcriptPart;
+                    }
+                }
+                
+                transcript.value = finalTranscript + interimTranscript;
+            };
+            
+            recognition.onerror = (event) => {
+                status.innerHTML = `<div class="status error">❌ خطا: ${event.error}</div>`;
+                resetButtons();
+            };
+            
+            recognition.onend = () => {
+                status.innerHTML = '<div class="status">✅ ضبط متوقف شد</div>';
+                resetButtons();
+            };
+            
+            startBtn.onclick = () => {
+                recognition.lang = langSelect.value;
+                recognition.start();
+            };
+            
+            stopBtn.onclick = () => {
+                recognition.stop();
+            };
+            
+        } else {
+            status.innerHTML = '<div class="status error">❌ مرورگر شما از Speech Recognition پشتیبانی نمی‌کند</div>';
+            startBtn.disabled = true;
+        }
+
+        function resetButtons() {
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            startBtn.classList.remove('recording');
+        }
+
+        // Audio File Processing Functions
+        audioFile.onchange = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                audioPlayer.src = url;
+                audioPlayer.style.display = 'block';
+                processAudioBtn.disabled = false;
+                audioStatus.innerHTML = '<div class="status">📁 فایل آماده پردازش است</div>';
+            }
+        };
+
+        processAudioBtn.onclick = async () => {
+            if (!audioFile.files[0]) return;
+            
+            try {
+                // Setup audio recognition
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    audioRecognition = new SpeechRecognition();
+                    
+                    audioRecognition.continuous = true;
+                    audioRecognition.interimResults = true;
+                    audioRecognition.lang = langSelect.value;
+                    
+                    let finalTranscript = '';
+                    
+                    audioRecognition.onstart = () => {
+                        processAudioBtn.disabled = true;
+                        stopProcessBtn.disabled = false;
+                        audioStatus.innerHTML = '<div class="status listening">🎤 در حال پردازش فایل صوتی...</div>';
+                        audioTranscript.value = '';
+                    };
+                    
+                    audioRecognition.onresult = (event) => {
+                        let interimTranscript = '';
+                        
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const transcriptPart = event.results[i][0].transcript;
+                            if (event.results[i].isFinal) {
+                                finalTranscript += transcriptPart + ' ';
+                            } else {
+                                interimTranscript += transcriptPart;
+                            }
+                        }
+                        
+                        audioTranscript.value = finalTranscript + interimTranscript;
+                    };
+                    
+                    audioRecognition.onerror = (event) => {
+                        audioStatus.innerHTML = `<div class="status error">❌ خطا در پردازش: ${event.error}</div>`;
+                        resetAudioButtons();
+                    };
+                    
+                    audioRecognition.onend = () => {
+                        audioStatus.innerHTML = '<div class="status">✅ پردازش فایل صوتی تمام شد</div>';
+                        resetAudioButtons();
+                        audioPlayer.pause();
+                    };
+                    
+                    // Start recognition and play audio
+                    audioRecognition.start();
+                    
+                    // Play audio after a short delay
+                    setTimeout(() => {
+                        audioPlayer.currentTime = 0;
+                        audioPlayer.play();
+                    }, 1000);
+                    
+                    // Stop recognition when audio ends
+                    audioPlayer.onended = () => {
+                        setTimeout(() => {
+                            if (audioRecognition) {
+                                audioRecognition.stop();
+                            }
+                        }, 2000); // Wait 2 seconds after audio ends
+                    };
+                }
+            } catch (error) {
+                audioStatus.innerHTML = `<div class="status error">❌ خطا: ${error.message}</div>`;
+                resetAudioButtons();
+            }
+        };
+
+        stopProcessBtn.onclick = () => {
+            if (audioRecognition) {
+                audioRecognition.stop();
+            }
+            audioPlayer.pause();
+            resetAudioButtons();
+        };
+
+        function resetAudioButtons() {
+            processAudioBtn.disabled = false;
+            stopProcessBtn.disabled = true;
+        }
+
+        // Speech Synthesis
+        const textToSpeak = document.getElementById('textToSpeak');
+        const speakBtn = document.getElementById('speakBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const rateSlider = document.getElementById('rateSlider');
+        const volumeSlider = document.getElementById('volumeSlider');
+
+        let voices = [];
+        let currentUtterance = null;
+
+        function loadVoices() {
+            voices = speechSynthesis.getVoices();
+            voiceSelect.innerHTML = '';
+            
+            voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.lang.includes('fa') || voice.lang.includes('FA')) {
+                    option.selected = true;
+                }
+                voiceSelect.appendChild(option);
+            });
+        }
+
+        // Load voices when available
+        speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        speakBtn.onclick = () => {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+            
+            const text = textToSpeak.value.trim();
+            if (!text) return;
+            
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.voice = voices[voiceSelect.value];
+            currentUtterance.rate = parseFloat(rateSlider.value);
+            currentUtterance.volume = parseFloat(volumeSlider.value);
+            
+            currentUtterance.onstart = () => {
+                speakBtn.textContent = '🔊 در حال خواندن...';
+                speakBtn.disabled = true;
+            };
+            
+            currentUtterance.onend = () => {
+                speakBtn.textContent = 'خواندن متن';
+                speakBtn.disabled = false;
+            };
+            
+            currentUtterance.onerror = () => {
+                speakBtn.textContent = 'خواندن متن';
+                speakBtn.disabled = false;
+            };
+            
+            speechSynthesis.speak(currentUtterance);
+        };
+
+        pauseBtn.onclick = () => {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+                speakBtn.textContent = 'خواندن متن';
+                speakBtn.disabled = false;
+            }
+        };
+
+        // Update sliders display
+        rateSlider.oninput = () => {
+            rateSlider.nextElementSibling.textContent = rateSlider.value;
+        };
+        
+        volumeSlider.oninput = () => {
+            volumeSlider.nextElementSibling.textContent = volumeSlider.value;
+        };
+    </script>
+</body>
+</html>
